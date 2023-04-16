@@ -1,0 +1,24 @@
+targets:
+  $default:
+    builders:
+      hive_generator:
+        options:
+          runs_before:
+            - auto_route_generator
+      json_serializable:
+        options:
+          generic_argument_factories: true
+          create_to_json: true
+          create_field_map: true
+          explicit_to_json: true
+          include_if_null: false
+          field_rename: snake
+      freezed:
+        options:
+          union_key: type
+          union_value_case: snake
+          generic_argument_factories: true
+          maybe_when: false
+          when_or_null: false
+          maybe_map: false
+          map_or_null: false
