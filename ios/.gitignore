@@ -15,6 +15,7 @@ Icon?
 profile
 xcuserdata
 **/.generated/
+Podfile.lock
 Flutter/App.framework
 Flutter/Flutter.framework
 Flutter/Flutter.podspec
@@ -26,6 +27,8 @@ Flutter/flutter_assets/
 Flutter/flutter_export_environment.sh
 ServiceDefinitions.json
 Runner/GeneratedPluginRegistrant.*
+**/firebase_app_id_file.json
+config/
 
 # Exceptions to above rules.
 !default.mode1v3

@@ -32,6 +32,12 @@ migrate_working_dir/
 .pub/
 /build/
 
+# Project specific
+.vscode
+pubspec.lock
+/lib/config/secrets.dart
+/lib/config/firebase_options.dart
+
 # Symbolication related
 app.*.symbols
 
