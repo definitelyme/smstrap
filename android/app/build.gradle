@@ -1,3 +1,10 @@
+plugins {
+    id 'com.android.application'
+    id 'kotlin-android'
+    id 'com.google.gms.google-services'
+    id 'com.google.firebase.crashlytics'
+}
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file('local.properties')
 if (localPropertiesFile.exists()) {
@@ -21,21 +28,53 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
-apply plugin: 'com.android.application'
-apply plugin: 'kotlin-android'
+/// Define signing configurations for development flavor
+def devStoreFile = keystoreProperties.getProperty('dev.file')
+def devStorePassword = keystoreProperties.getProperty('dev.storePassword')
+def devKeyAlias = keystoreProperties.getProperty('dev.alias')
+def devKeyPassword = keystoreProperties.getProperty('dev.keyPassword')
+
+/// Define signing configurations for staging flavor
+def stagingStoreFile = keystoreProperties.getProperty('staging.file')
+def stagingStorePassword = keystoreProperties.getProperty('staging.storePassword')
+def stagingKeyAlias = keystoreProperties.getProperty('staging.alias')
+def stagingKeyPassword = keystoreProperties.getProperty('staging.keyPassword')
+
+/// Define signing configurations for prod/release flavor
+def prodStoreFile = keystoreProperties.getProperty('prod.file')
+def prodStorePassword = keystoreProperties.getProperty('prod.storePassword')
+def prodKeyAlias = keystoreProperties.getProperty('prod.alias')
+def prodKeyPassword = keystoreProperties.getProperty('prod.keyPassword')
+
 apply from: "$flutterRoot/packages/flutter_tools/gradle/flutter.gradle"
 
 android {
-    compileSdkVersion flutter.compileSdkVersion
-    ndkVersion flutter.ndkVersion
+    compileSdkVersion Math.max(flutter.compileSdkVersion, 33)
 
     compileOptions {
+        // Flag to enable support for the new language APIs
+        coreLibraryDesugaringEnabled true
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
 
+    lintOptions {
+        disable 'InvalidPackage'
+        abortOnError true
+        checkReleaseBuilds false
+    }
+
     kotlinOptions {
         jvmTarget = '1.8'
+        freeCompilerArgs += '-Xjvm-default=all-compatibility'
+    }
+
+    dexOptions {
+        if (System.getenv()["CI"] != null && System.getenv()["CI"].toBoolean() == true) {
+            preDexLibraries true
+            maxProcessCount 8
+            javaMaxHeapSize "4g"
+        }
     }
 
     sourceSets {
@@ -43,21 +82,93 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId "com.app.smstrap"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdkVersion flutter.minSdkVersion
-        targetSdkVersion flutter.targetSdkVersion
+        minSdkVersion 23
+        targetSdkVersion 33
+        multiDexEnabled true
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }
 
-    buildTypes {
+    signingConfigs {
+        debug {
+            if (System.getenv()["CI"] != null && System.getenv()["CI"].toBoolean() == true) {
+                storeFile = file(System.getenv()["CM_KEYSTORE_PATH"])
+                storePassword = System.getenv()["CM_KEYSTORE_PASSWORD"]
+                keyAlias = System.getenv()["CM_KEY_ALIAS"]
+                keyPassword = System.getenv()["CM_KEY_PASSWORD"]
+            } else {
+                storeFile rootProject.file(devStoreFile)
+                storePassword devStorePassword
+                keyAlias devKeyAlias
+                keyPassword devKeyPassword
+            }
+        }
+        staging {
+            if (System.getenv()["CI"] != null && System.getenv()["CI"].toBoolean() == true) {
+                storeFile = file(System.getenv()["CM_KEYSTORE_PATH"])
+                storePassword = System.getenv()["CM_KEYSTORE_PASSWORD"]
+                keyAlias = System.getenv()["CM_KEY_ALIAS"]
+                keyPassword = System.getenv()["CM_KEY_PASSWORD"]
+            } else {
+                storeFile rootProject.file(stagingStoreFile)
+                storePassword stagingStorePassword
+                keyAlias stagingKeyAlias
+                keyPassword stagingKeyPassword
+            }
+        }
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
+            if (System.getenv()["CI"] != null && System.getenv()["CI"].toBoolean() == true) {
+                storeFile = file(System.getenv()["CM_KEYSTORE_PATH"])
+                storePassword = System.getenv()["CM_KEYSTORE_PASSWORD"]
+                keyAlias = System.getenv()["CM_KEY_ALIAS"]
+                keyPassword = System.getenv()["CM_KEY_PASSWORD"]
+            } else {
+                storeFile rootProject.file(prodStoreFile)
+                storePassword prodStorePassword
+                keyAlias prodKeyAlias
+                keyPassword prodKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
             signingConfig signingConfigs.debug
+            firebaseCrashlytics {
+                // If you don't need crash reporting for your debug build,
+                // you can speed up your build by disabling mapping file uploading.
+                mappingFileUploadEnabled false
+            }
+        }
+
+        release {
+            crunchPngs true
+            useProguard true
+            signingConfig signingConfigs.release
+            firebaseCrashlytics { mappingFileUploadEnabled true }
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    flavorDimensions "app"
+
+    productFlavors {
+        dev {
+            dimension "app"
+            versionNameSuffix "-dev"
+            applicationIdSuffix ".dev"
+            signingConfig signingConfigs.debug
+        }
+        staging {
+            dimension "app"
+            versionNameSuffix "-staging"
+            applicationIdSuffix ".staging"
+            signingConfig signingConfigs.staging
+        }
+        prod {
+            dimension "app"
+            signingConfig signingConfigs.release
         }
     }
 }
@@ -68,4 +179,12 @@ flutter {
 
 dependencies {
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
+    // for multidex
+    implementation 'androidx.multidex:multidex:2.0.1'
+    // Relying on desugaring to support scheduled notifications with backwards compatibility on older versions of Android.
+    implementation 'androidx.window:window:1.0.0'
+    // implementation 'androidx.window:window:1.1.0-alpha04'
+    implementation 'androidx.window:window-java:1.0.0'
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+    // coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
 }
