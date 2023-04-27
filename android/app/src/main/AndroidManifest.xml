@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.app.smstrap">
 
     <uses-permission
@@ -43,10 +44,6 @@
               android:name="io.flutter.embedding.android.NormalTheme"
               android:resource="@style/NormalTheme"
               />
-
-            <activity
-                android:showWhenLocked="true"
-                android:turnScreenOn="true">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
