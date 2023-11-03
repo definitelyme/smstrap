@@ -28,6 +28,13 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 /// Define signing configurations for development flavor
 def devStoreFile = keystoreProperties.getProperty('dev.file')
 def devStorePassword = keystoreProperties.getProperty('dev.storePassword')
@@ -144,7 +151,6 @@ android {
 
         release {
             crunchPngs true
-            useProguard true
             signingConfig signingConfigs.release
             firebaseCrashlytics { mappingFileUploadEnabled true }
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -183,8 +189,6 @@ dependencies {
     implementation 'androidx.multidex:multidex:2.0.1'
     // Relying on desugaring to support scheduled notifications with backwards compatibility on older versions of Android.
     implementation 'androidx.window:window:1.0.0'
-    // implementation 'androidx.window:window:1.1.0-alpha04'
     implementation 'androidx.window:window-java:1.0.0'
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
-    // coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.2.2'
 }
