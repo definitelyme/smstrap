@@ -41,7 +41,7 @@ dependencies:
 
   flutter_bloc: ^8.1.1
 
-  flutter_local_notifications: ^13.0.0
+  # flutter_local_notifications: ^13.0.0
 
   flutter_screenutil: ^5.7.0
 
